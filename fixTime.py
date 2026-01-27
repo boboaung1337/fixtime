@@ -72,14 +72,15 @@ parser = argparse.ArgumentParser(
 Examples:
   %(prog)s -u dc.voleur.htb                    # Sync time with DC
   %(prog)s -u 10.10.10.10                      # Sync with IP
+  %(prog)s -u dc.domain.com -i 192.168.1.10    # Specify hostname and IP
+  %(prog)s -u dc.domain.com --auto-ntpdate     # Run ntpdate automatically
   %(prog)s -u dc.domain.com --check-skew       # Check only
   %(prog)s -u dc.domain.com --force            # Force sync
-  %(prog)s -u dc.domain.com --use-ntpdate      # Use ntpdate for final sync
-  %(prog)s -u dc.domain.com --auto-domain      # Auto-detect domain from hostname
   %(prog)s --restore-ntp                       # Restore NTP service
 """
 )
 parser.add_argument("-u", "--url", help="Target URL/IP (e.g., dc.domain.com or http://dc.domain.com)")
+parser.add_argument("-i", "--ip", help="Target IP address (if different from DNS resolution)")
 parser.add_argument("-d", "--domain", help="Domain name for NTP sync (e.g., domain.com)")
 parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 parser.add_argument("--restore-ntp", action="store_true", help="Re-enable NTP and exit")
@@ -90,7 +91,8 @@ parser.add_argument("--auto-domain", action="store_true", help="Auto-detect doma
 parser.add_argument("--skip-timezone", action="store_true", help="Don't set timezone to UTC")
 parser.add_argument("--ntp-server", help="Custom NTP server (default: domain from target or time.google.com)")
 parser.add_argument("--no-ntpdate-fallback", action="store_true", help="Don't use fallback NTP servers if primary fails")
-parser.add_argument("--auto-ntpdate", action="store_true", help="Automatically run ntpdate command before script operations")
+parser.add_argument("--auto-ntpdate", action="store_true", 
+                    help="Automatically run ntpdate command before script operations")
 args = parser.parse_args()
 
 # --- Helper Functions ---
@@ -206,11 +208,17 @@ def validate_url():
     if ':' in hostname:
         hostname = hostname.split(':')[0]
     
-    # Get IP for NTP server
-    try:
-        target_ip = socket.gethostbyname(hostname)
-    except socket.gaierror:
-        target_ip = hostname  # Might already be an IP
+    # Use provided IP or resolve DNS
+    if args.ip:
+        target_ip = args.ip
+        print(f"[*] Using provided IP: {target_ip}")
+    else:
+        try:
+            target_ip = socket.gethostbyname(hostname)
+            print(f"[*] Resolved IP: {target_ip}")
+        except socket.gaierror:
+            target_ip = hostname  # Might already be an IP
+            print(f"[*] Using hostname as IP (DNS resolution failed): {target_ip}")
     
     return url, hostname, target_ip
 
@@ -338,14 +346,15 @@ def auto_ntpdate_sync(ntp_server):
 
 # --- Time Retrieval Functions ---
 
-def get_time_winrm(url, host):
+def get_time_winrm(url, host, ip=None):
     port = 5985
+    target = ip if ip else host
     try:
-        if not check_port(host, port):
-            log(f"[-] Port {port} (WinRM) closed.")
+        if not check_port(target, port):
+            log(f"[-] Port {port} (WinRM) closed on {target}.")
             return None
         
-        log(f"[*] Trying WinRM ({port})")
+        log(f"[*] Trying WinRM ({port}) on {target}")
         
         endpoints = ['/wsman', '/wsman/', '']
         
@@ -353,49 +362,56 @@ def get_time_winrm(url, host):
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", InsecureRequestWarning)
-                    r = requests.head(f"{url}:{port}{endpoint}", 
-                                    timeout=TIMEOUT, verify=False, allow_redirects=False)
+                    # Try with IP if provided
+                    if ip:
+                        r = requests.head(f"http://{ip}:{port}{endpoint}", 
+                                        timeout=TIMEOUT, verify=False, allow_redirects=False)
+                    else:
+                        r = requests.head(f"{url}:{port}{endpoint}", 
+                                        timeout=TIMEOUT, verify=False, allow_redirects=False)
                 
                 if 'Date' in r.headers:
                     date_str = r.headers['Date']
                     try:
                         remote_time = datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %Z')
-                        return (remote_time, "WinRM (HTTP Date header)")
+                        return (remote_time, f"WinRM (HTTP Date header) on {target}")
                     except ValueError:
                         try:
                             remote_time = datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S GMT')
-                            return (remote_time, "WinRM (HTTP Date header)")
+                            return (remote_time, f"WinRM (HTTP Date header) on {target}")
                         except:
                             continue
             except requests.exceptions.RequestException:
                 continue
         
-        log("[-] WinRM: No valid Date header")
+        log(f"[-] WinRM: No valid Date header from {target}")
     except Exception as e:
-        log(f"[-] WinRM failed: {type(e).__name__} - {e}")
+        log(f"[-] WinRM failed on {target}: {type(e).__name__} - {e}")
     return None
 
-def get_time_smb(host):
+def get_time_smb(host, ip=None):
     port = 445
+    target = ip if ip else host
     try:
-        if not check_port(host, port):
-            log(f"[-] Port {port} (SMB) closed.")
+        if not check_port(target, port):
+            log(f"[-] Port {port} (SMB) closed on {target}.")
             return None
             
-        log(f"[*] Trying SMB ({port})")
-        conn = SMBConnection(host, host, sess_port=port, timeout=TIMEOUT)
+        log(f"[*] Trying SMB ({port}) on {target}")
+        conn = SMBConnection(target, target, sess_port=port, timeout=TIMEOUT)
         server_time = conn.getSMBServer().get_server_time()
         conn.close()
-        return (server_time, "SMB")
+        return (server_time, f"SMB on {target}")
     except Exception as e:
-        log(f"[-] SMB failed: {type(e).__name__} - {e}")
+        log(f"[-] SMB failed on {target}: {type(e).__name__} - {e}")
     return None
 
-def get_time_http(url, host):
+def get_time_http(url, host, ip=None):
     """Try to get time from HTTP/HTTPS headers."""
     port = 80
+    target = ip if ip else host
     try:
-        log(f"[*] Trying HTTP ({port})")
+        log(f"[*] Trying HTTP ({port}) on {target}")
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", InsecureRequestWarning)
             r = requests.head(url, timeout=TIMEOUT, verify=False, allow_redirects=False)
@@ -404,11 +420,11 @@ def get_time_http(url, host):
             date_str = r.headers['Date']
             try:
                 remote_time = datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %Z')
-                return (remote_time, "HTTP Date header")
+                return (remote_time, f"HTTP Date header on {target}")
             except ValueError:
                 try:
                     remote_time = datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S GMT')
-                    return (remote_time, "HTTP Date header")
+                    return (remote_time, f"HTTP Date header on {target}")
                 except:
                     pass
     except:
@@ -417,7 +433,7 @@ def get_time_http(url, host):
     # Try HTTPS on port 443
     port = 443
     try:
-        log(f"[*] Trying HTTPS ({port})")
+        log(f"[*] Trying HTTPS ({port}) on {target}")
         https_url = url.replace('http://', 'https://')
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", InsecureRequestWarning)
@@ -427,11 +443,11 @@ def get_time_http(url, host):
             date_str = r.headers['Date']
             try:
                 remote_time = datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %Z')
-                return (remote_time, "HTTPS Date header")
+                return (remote_time, f"HTTPS Date header on {target}")
             except ValueError:
                 try:
-                    remote_time = datetime.strptime(date_str, '%a, %d %b %H:%M:%S GMT')
-                    return (remote_time, "HTTPS Date header")
+                    remote_time = datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S GMT')
+                    return (remote_time, f"HTTPS Date header on {target}")
                 except:
                     pass
     except:
@@ -439,11 +455,11 @@ def get_time_http(url, host):
     
     return None
 
-def get_remote_time_concurrent(url, host):
+def get_remote_time_concurrent(url, host, ip=None):
     tasks = [
-        (get_time_winrm, (url, host)),
-        (get_time_smb, (host,)),
-        (get_time_http, (url, host)),
+        (get_time_winrm, (url, host, ip)),
+        (get_time_smb, (host, ip)),
+        (get_time_http, (url, host, ip)),
     ]
     
     found_result = None
@@ -634,7 +650,7 @@ def main():
                 print(f"[*] Updated local time: {local_info['local'].strftime('%Y-%m-%d %H:%M:%S')}")
         
         try:
-            result = get_remote_time_concurrent(url, hostname)
+            result = get_remote_time_concurrent(url, hostname, target_ip)
             
             if result:
                 remote_time, method = result
@@ -660,7 +676,7 @@ def main():
                     else:
                         print(f"[!] Exceeds Kerberos tolerance - Kerberos will fail")
                         if not args.auto_ntpdate:
-                            print(f"[*] Suggested command: {sys.argv[0]} -u {hostname} --auto-ntpdate")
+                            print(f"[*] Suggested command: {sys.argv[0]} -u {hostname} -i {target_ip} --auto-ntpdate")
                         print(f"[*] Or manually: sudo timedatectl set-ntp false && sudo ntpdate {ntp_server} && sudo timedatectl set-ntp true")
                 else:
                     success = sync_time_manual(result, ntp_server)
@@ -672,16 +688,16 @@ def main():
                     else:
                         print("\n[-] Time sync failed")
                         if ntp_server:
-                            print(f"[*] Try auto ntpdate: {sys.argv[0]} -u {hostname} --auto-ntpdate")
+                            print(f"[*] Try auto ntpdate: {sys.argv[0]} -u {hostname} -i {target_ip} --auto-ntpdate")
                             print(f"[*] Or manually: sudo timedatectl set-ntp false && sudo ntpdate {ntp_server} && sudo timedatectl set-ntp true")
             else:
                 print("\n[-] Failed to fetch remote time from DC")
-                print("[*] Checked: WinRM (5985), SMB (445), HTTP/HTTPS (80/443)")
+                print(f"[*] Checked on {target_ip}: WinRM (5985), SMB (445), HTTP/HTTPS (80/443)")
                 print("\n[*] Alternative methods:")
-                print(f"    1. Use auto ntpdate: {sys.argv[0]} -u {hostname} --auto-ntpdate")
+                print(f"    1. Use auto ntpdate: {sys.argv[0]} -u {hostname} -i {target_ip} --auto-ntpdate")
                 print(f"    2. Try manual sync: sudo date -u -s '$(curl -sI {url} | grep Date | cut -d' ' -f2-)'")
                 if not args.ntp_server:
-                    print(f"    3. Run with --auto-domain: {sys.argv[0]} -u {hostname} --auto-domain --auto-ntpdate")
+                    print(f"    3. Run with --auto-domain: {sys.argv[0]} -u {hostname} -i {target_ip} --auto-domain --auto-ntpdate")
                 
         except KeyboardInterrupt:
             print("\n[-] Operation cancelled")
@@ -692,7 +708,7 @@ def main():
                 import traceback
                 traceback.print_exc()
             print(f"\n[*] You can try auto ntpdate:")
-            print(f"    {sys.argv[0]} -u {hostname} --auto-ntpdate")
+            print(f"    {sys.argv[0]} -u {hostname} -i {target_ip} --auto-ntpdate")
             print(f"\n[*] Or manually:")
             print(f"    sudo timedatectl set-ntp false && sudo ntpdate {ntp_server} && sudo timedatectl set-ntp true")
 
