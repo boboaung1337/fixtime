@@ -38,6 +38,5 @@ fixtime.py -u dc.domain.com -i 10.0.0.5 --auto-domain --auto-ntpdate
 ```bash
 fixtime.py -u target.local -i 192.168.0.100 --ntp-server time.google.com --auto-ntpdate
 ```
-```
 
 
