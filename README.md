@@ -11,6 +11,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 wget https://raw.githubusercontent.com/boboaung1337/fixtime/refs/heads/main/fixtime.py && mv fixtime.py ~/.local/bin/fixtime.py && sudo chmod +x ~/.local/bin/fixtime.py
 ```
 
+
+
 ## Options
 
 ```bash
