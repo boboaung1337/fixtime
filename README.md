@@ -40,8 +40,4 @@ fixtime.py -u target.local -i 192.168.0.100 --ntp-server time.google.com --auto-
 ```
 ```
 
-**Key points:**
-- Each ```bash starts a new box
-- Each ``` closes that box
-- Blank line between boxes (optional but recommended)
-- This gives you separate, individual code blocks for each command
+
