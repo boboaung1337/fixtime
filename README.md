@@ -2,7 +2,11 @@
 
 # install 
 
-wget https://raw.githubusercontent.com/boboaung1337/fixtime/refs/heads/main/fixtime.py && cp fixtime.py ~/.local/bin/fixtime.py && sudo chmod +x ~/.local/bin/fixtime.py
+wget https://raw.githubusercontent.com/boboaung1337/fixtime/refs/heads/main/fixtime.py && mv fixtime.py ~/.local/bin/fixtime.py && sudo chmod +x ~/.local/bin/fixtime.py 
+
+# OPTIONS
+
+fixtime.py -h
 
 # Basic usage with hostname and IP
 sudo python3 fixTime.py -u tombwatcher.htb -i 10.10.10.10 --auto-ntpdate
