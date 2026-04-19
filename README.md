@@ -1,1 +1,49 @@
+Ah, I see! You want each command in its **own separate code box**, not all in one big box.
 
+Here's the correct formatting - notice the closing ``` and then a blank line before the next opening ```:
+
+```markdown
+## Fixtime Install
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+```bash
+wget https://raw.githubusercontent.com/boboaung1337/fixtime/refs/heads/main/fixtime.py && mv fixtime.py ~/.local/bin/fixtime.py && sudo chmod +x ~/.local/bin/fixtime.py
+```
+
+## Options
+
+```bash
+fixtime.py -h
+```
+
+## Basic Usage
+
+```bash
+fixtime.py -u tombwatcher.htb -i 10.10.10.10 --auto-ntpdate
+```
+
+```bash
+fixtime.py -u tombwatcher.htb -i 10.10.10.10 --auto-ntpdate --force
+```
+
+```bash
+fixtime.py -u dc.voleur.htb -i 192.168.1.10 --check-skew
+```
+
+```bash
+fixtime.py -u dc.domain.com -i 10.0.0.5 --auto-domain --auto-ntpdate
+```
+
+```bash
+fixtime.py -u target.local -i 192.168.0.100 --ntp-server time.google.com --auto-ntpdate
+```
+```
+
+**Key points:**
+- Each ```bash starts a new box
+- Each ``` closes that box
+- Blank line between boxes (optional but recommended)
+- This gives you separate, individual code blocks for each command
