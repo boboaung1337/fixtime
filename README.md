@@ -1,6 +1,4 @@
-Ah, I see! You want each command in its **own separate code box**, not all in one big box.
-
-Here's the correct formatting - notice the closing ``` and then a blank line before the next opening ```:
+``` and then a blank line before the next opening ```:
 
 ```markdown
 ## Fixtime Install
