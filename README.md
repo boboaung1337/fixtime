@@ -1,7 +1,7 @@
 ## Fixtime Install
 
 ```markdown
-```bash
+```bashd
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
