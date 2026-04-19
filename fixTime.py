@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
@@ -14,7 +14,7 @@
 #     "requests>=2.32.5",
 #     "requests-pkcs12>=1.27",
 #     "selenium>=4.39.0",
-#     "tzlocal>=5.5",
+#     "tzlocal>=5.3",
 # ]
 # ///
 
