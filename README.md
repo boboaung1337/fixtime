@@ -1,11 +1,8 @@
-Ah, I see! You want each command in its **own separate code box**, not all in one big box.
-
-Here's the correct formatting - notice the closing ``` and then a blank line before the next opening ```:
-
+## Fixtime Install
 ```markdown
 ## Fixtime Install
 
-```bash
+```
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
