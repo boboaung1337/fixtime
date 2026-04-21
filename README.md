@@ -1,12 +1,18 @@
 ## Fixtime Install
+```bash
+sudo su
+```
 
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
+```bash
+export PATH="/root/.local/bin:$PATH"
+```
 
 ```bash
-wget https://raw.githubusercontent.com/boboaung1337/fixtime/refs/heads/main/fixtime.py && mv fixtime.py ~/.local/bin/fixtime.py && sudo chmod +x ~/.local/bin/fixtime.py
+wget https://raw.githubusercontent.com/boboaung1337/fixtime/refs/heads/main/fixtime.py && mv fixtime.py /root/.local/bin/fixtime.py && sudo chmod +x /root/.local/bin/fixtime.py
 ```
 
 
