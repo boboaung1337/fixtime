@@ -1,53 +1,38 @@
 ## Fixtime Install
 
 ```bash
-wget https://github.com/boboaung1337/fixtime/raw/refs/heads/main/fixtime && sudo mv fixtime /usr/bin && sudo chmod +x /usr/bin/fixtime
-```
-
-```bash
 sudo su
 ```
-
-
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+wget https://github.com/boboaung1337/fixtime/raw/refs/heads/main/fixtime && sudo mv fixtime /usr/bin && sudo chmod +x /usr/bin/fixtime
 ```
-```bash
-export PATH="/root/.local/bin:$PATH"
-```
-
-```bash
-wget https://raw.githubusercontent.com/boboaung1337/fixtime/refs/heads/main/fixtime.py && mv fixtime.py /root/.local/bin/fixtime.py && sudo chmod +x /root/.local/bin/fixtime.py
-```
-
-
-
 ## Options
 
 ```bash
-fixtime.py -h
+fixtime -h
 ```
 
 ## Basic Usage
 
 ```bash
-fixtime.py -u tombwatcher.htb -i 10.10.10.10 --auto-ntpdate
+fixtime -u tombwatcher.htb -i 10.10.10.10 --auto-ntpdate
 ```
 
 ```bash
-fixtime.py -u tombwatcher.htb -i 10.10.10.10 --auto-ntpdate --force
+fixtime -u tombwatcher.htb -i 10.10.10.10 --auto-ntpdate --force
 ```
 
 ```bash
-fixtime.py -u dc.voleur.htb -i 192.168.1.10 --check-skew
+fixtime -u dc.voleur.htb -i 192.168.1.10 --check-skew
 ```
 
 ```bash
-fixtime.py -u dc.domain.com -i 10.0.0.5 --auto-domain --auto-ntpdate
+fixtime -u dc.domain.com -i 10.0.0.5 --auto-domain --auto-ntpdate
 ```
 
 ```bash
-fixtime.py -u target.local -i 192.168.0.100 --ntp-server time.google.com --auto-ntpdate
+fixtime -u target.local -i 192.168.0.100 --ntp-server time.google.com --auto-ntpdate
 ```
-
-
+```bash
+fixtime --restore-ntp
+```
