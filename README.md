@@ -1,4 +1,9 @@
 ## Fixtime Install
+
+```bash
+wget https://github.com/boboaung1337/fixtime/raw/refs/heads/main/fixtime && sudo mv fixtime /usr/bin && sudo chmod +x /usr/bin/fixtime
+```
+
 ```bash
 sudo su
 ```
