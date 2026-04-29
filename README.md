@@ -15,6 +15,10 @@ fixtime -h
 ## Basic Usage
 
 ```bash
+fixtime -i 10.10.10.10 --auto-ntpdate
+```
+
+```bash
 fixtime -u tombwatcher.htb -i 10.10.10.10 --auto-ntpdate
 ```
 
